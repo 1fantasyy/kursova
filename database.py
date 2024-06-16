@@ -1,62 +1,22 @@
 import sqlite3
 
+#  Підключення до бази даних SQLite з файлом "train_booking.db
 def connect_db():
-    """
-    Підключення до бази даних SQLite з файлом "train_booking.db".
 
-    Повертає:
-    --------
-    conn : sqlite3.Connection
-        Об'єкт підключення до бази даних.
-
-    Виключення:
-    ----------
-    Виняток `sqlite3.Error` може виникати при невдалому з'єднанні з базою даних.
-    """
     return sqlite3.connect("train_booking.db")
 
+#  Виконання SQL-запиту на базі даних.
 def execute_query(query, params=()):
-    """
-    Виконання SQL-запиту на базі даних.
 
-    Параметри:
-    ----------
-    query : str
-        SQL-запит для виконання.
-    params : tuple, optional
-        Параметри для передачі у запит (за замовчуванням пустий кортеж).
-
-
-    Виключення:
-    ----------
-    Виняток `sqlite3.Error` може виникати при невдалому виконанні запиту.
-    """
     conn = connect_db()
     cursor = conn.cursor()
     cursor.execute(query, params)
     conn.commit()
     conn.close()
 
+#  Виконання SQL-запиту на базі даних та отримання результатів
 def fetch_query(query, params=()):
-    """
-    Виконання SQL-запиту на базі даних та отримання результатів.
 
-    Параметри:
-    ----------
-    query : str
-        SQL-запит для виконання.
-    params : tuple, optional
-        Параметри для передачі у запит (за замовчуванням пустий кортеж).
-
-    Повертає:
-    --------
-    results : list
-        Список кортежів з результатами запиту.
-
-    Виключення:
-    ----------
-    Виняток `sqlite3.Error` може виникати при невдалому виконанні запиту.
-    """
     conn = connect_db()
     cursor = conn.cursor()
     cursor.execute(query, params)
@@ -64,22 +24,9 @@ def fetch_query(query, params=()):
     conn.close()
     return results
 
+#   Створення таблиць у базі даних, якщо вони ще не існують.
 def create_tables():
-    """
-    Створення таблиць у базі даних, якщо вони ще не існують.
 
-    Параметри:
-    ----------
-    Немає параметрів.
-
-    Повертає:
-    --------
-    Немає повернення значення.
-
-    Виключення:
-    ----------
-    Виняток `sqlite3.Error` може виникати при невдалому виконанні запитів на створення таблиць.
-    """
     execute_query('''
     CREATE TABLE IF NOT EXISTS Train (
         id INTEGER PRIMARY KEY,
@@ -94,7 +41,7 @@ def create_tables():
     CREATE TABLE IF NOT EXISTS Wagon (
         id INTEGER PRIMARY KEY,
         train_id INTEGER,
-        number TEXT,
+        number INTEGER,
         seats INTEGER,
         FOREIGN KEY(train_id) REFERENCES Train(id)
     )
@@ -114,6 +61,10 @@ def create_tables():
 
 # Виклик функції для створення таблиць при запуску скрипту
 create_tables()
+
+
+
+
 
 
 
