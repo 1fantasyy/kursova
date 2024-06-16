@@ -1,89 +1,115 @@
 import tkinter as tk
 from tkinter import messagebox
+from tkcalendar import DateEntry
 from database import fetch_query
+from datetime import date
 
+    #  Клас Search створює інтерфейс для пошуку потягів за ключовим словом або бронювань за датою.
 class Search:
     def __init__(self, root, back_callback):
         self.root = root
         self.back_callback = back_callback
-        self.search_menu()
+        self.font = ("Times New Roman", 16, "bold")
+        self.keyword_entry = None
+        self.date_entry = None
+        self.setup_ui()
 
-    def clear_window(self):
-        for widget in self.root.winfo_children():
+    #  Очищує вміст головного вікна, видаляючи всі дочірні віджети.
+    def clear_content(self):
+        for widget in self.content_frame.winfo_children():
             widget.destroy()
 
-    def search_menu(self):
-        self.clear_window()
-        self.search_menu_frame = tk.Frame(self.root)
-        self.search_menu_frame.pack(pady=20)
+    #  Створює основний інтерфейс для пошуку потягів та бронювань за ключовим словом або датою.
+    def setup_ui(self):
+        self.main_frame = tk.Frame(self.root)
+        self.main_frame.pack(fill=tk.BOTH, expand=True)
 
-        tk.Button(self.search_menu_frame, text="Search Trains by Keyword", command=self.search_trains_by_keyword, width=30).pack(pady=10)
-        tk.Button(self.search_menu_frame, text="Search Bookings by Date", command=self.search_bookings_by_date, width=30).pack(pady=10)
-        tk.Button(self.search_menu_frame, text="Back", command=self.back_callback, width=30).pack(pady=10)
+        self.button_frame = tk.Frame(self.main_frame)
+        self.button_frame.pack(side=tk.TOP, anchor=tk.N, pady=20)
 
+        tk.Button(self.button_frame, text="Пошук потягу за ключовим словом", command=self.search_trains_by_keyword, width=30, font=self.font, bg="#A1F7E3", bd=1).pack(side=tk.LEFT, padx=5, pady=5)
+        tk.Button(self.button_frame, text="Пошук бронювання за датою", command=self.search_bookings_by_date, width=30, font=self.font, bg="#A1F7E3", bd=1).pack(side=tk.LEFT, padx=5, pady=5)
+        tk.Button(self.button_frame, text="Назад", command=self.back_callback, width=30, font=self.font, bg="#A1F7E3", bd=1).pack(side=tk.LEFT, padx=5, pady=5)
+
+        self.content_frame = tk.Frame(self.main_frame)
+        self.content_frame.pack(fill=tk.BOTH, expand=True, pady=20)
+
+    #  Відображає інтерфейс для пошуку потягів за ключовим словом
     def search_trains_by_keyword(self):
-        self.clear_window()
-        self.search_trains_frame = tk.Frame(self.root)
-        self.search_trains_frame.pack(pady=20)
+        self.clear_content()
 
-        tk.Label(self.search_trains_frame, text="Enter keyword:").pack()
-        self.keyword_entry = tk.Entry(self.search_trains_frame)
-        self.keyword_entry.pack()
+        tk.Label(self.content_frame, text="Введіть ключове слово (назва, пункт відправлення/прибуття):", font=self.font).pack(pady=10)
+        self.keyword_entry = tk.Entry(self.content_frame, font=self.font)
+        self.keyword_entry.pack(pady=10)
 
-        tk.Button(self.search_trains_frame, text="Search", command=self.perform_search_trains_by_keyword, width=20).pack(pady=10)
-        tk.Button(self.search_trains_frame, text="Back", command=self.search_menu, width=20).pack(pady=10)
+        tk.Button(self.content_frame, text="Знайти", bg="#A1F7E3", command=self.perform_search_trains_by_keyword, width=20, font=self.font).pack(pady=10)
 
+    #  Виконує пошук потягів за ключовим словом у базі даних і відображає результати
     def perform_search_trains_by_keyword(self):
-        keyword = self.keyword_entry.get()
+        keyword = self.keyword_entry.get().strip()
         if not keyword:
-            messagebox.showerror("Error", "Please enter a keyword.")
+            messagebox.showerror("Помилка", "Введіть ключове слово.")
             return
 
-        query = "SELECT * FROM Train WHERE origin LIKE ? OR destination LIKE ? OR name LIKE ?"
+        query = "SELECT * FROM Train WHERE LOWER(origin) LIKE LOWER(?) OR LOWER(destination) LIKE LOWER(?) OR LOWER(name) LIKE LOWER(?)"
         params = ('%' + keyword + '%', '%' + keyword + '%', '%' + keyword + '%')
         results = fetch_query(query, params)
 
-        self.clear_window()
-        self.search_results_frame = tk.Frame(self.root)
-        self.search_results_frame.pack(pady=20)
+        if results:
+            self.clear_content()
+            for result in results:
+                tk.Label(self.content_frame, text=f"ID Потягу: {result[0]}, Назва: {result[3]}, Звідки: {result[1]}, Куди: {result[2]}, Дата: {result[4]}", font=self.font).pack(pady=5)
+        else:
+            self.keyword_entry.delete(0, tk.END)
+            messagebox.showinfo("Результат", "Нічого не знайдено. Спробуйте ще раз.")
 
-        for result in results:
-            tk.Label(self.search_results_frame, text=f"Train ID: {result[0]}, Name: {result[3]}, From: {result[1]}, To: {result[2]}, Date: {result[4]}").pack(pady=5)
-
-        tk.Button(self.search_results_frame, text="Back", command=self.search_menu, width=20).pack(pady=10)
-
+    #  Відображає інтерфейс для пошуку бронювань за датою
     def search_bookings_by_date(self):
-        self.clear_window()
-        self.search_bookings_frame = tk.Frame(self.root)
-        self.search_bookings_frame.pack(pady=20)
+        self.clear_content()
 
-        tk.Label(self.search_bookings_frame, text="Enter date (YYYY-MM-DD):").pack()
-        self.date_entry = tk.Entry(self.search_bookings_frame)
-        self.date_entry.pack()
+        tk.Label(self.content_frame, text="Введіть дату бронювання:", font=self.font).pack(pady=10)
+        self.date_entry = DateEntry(self.content_frame, date_pattern='dd.mm.yyyy', font=self.font)
+        self.date_entry.pack(pady=10)
 
-        tk.Button(self.search_bookings_frame, text="Search", command=self.perform_search_bookings_by_date, width=20).pack(pady=10)
-        tk.Button(self.search_bookings_frame, text="Back", command=self.search_menu, width=20).pack(pady=10)
+        tk.Button(self.content_frame, text="Знайти", bg="#A1F7E3", command=self.perform_search_bookings_by_date, width=20, font=self.font).pack(pady=10)
 
+    #  Виконує пошук бронювань за введеною користувачем датою і відображає результати.
     def perform_search_bookings_by_date(self):
         booking_date = self.date_entry.get()
         if not booking_date:
-            messagebox.showerror("Error", "Please enter a date.")
+            messagebox.showerror("Помилка", "Введіть дату.")
             return
 
         query = '''
-        SELECT Booking.id, Booking.train_id, Booking.wagon_id, Booking.seat_number, Train.date 
+        SELECT Booking.id, Booking.train_id, Booking.wagon_id, Booking.seat_number, Train.name, Train.origin, Train.destination, Train.date
         FROM Booking 
         JOIN Train ON Booking.train_id = Train.id 
         WHERE Train.date = ?
         '''
         results = fetch_query(query, (booking_date,))
 
-        self.clear_window()
-        self.search_results_frame = tk.Frame(self.root)
-        self.search_results_frame.pack(pady=20)
+        if results:
+            self.clear_content()
+            for result in results:
+                booking_info = f"Звідки: {result[5]}, Куди: {result[6]}, Назва потягу: {result[4]}, Дата: {result[7]}, Номер вагону: {result[2]}, Місце бронювання: {result[3]}, ID Потягу: {result[1]}"
+                tk.Label(self.content_frame, text=booking_info, font=self.font).pack(pady=5)
+        else:
+            self.date_entry.set_date(date.today())
+            messagebox.showinfo("Результат", "Немає бронювань на вказану дату.")
 
-        for result in results:
-            tk.Label(self.search_results_frame, text=f"Booking ID: {result[0]}, Train ID: {result[1]}, Wagon ID: {result[2]}, Seat Number: {result[3]}, Date: {result[4]}").pack(pady=5)
 
-        tk.Button(self.search_results_frame, text="Back", command=self.search_menu, width=20).pack(pady=10)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
